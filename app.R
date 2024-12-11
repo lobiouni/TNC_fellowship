@@ -2,7 +2,7 @@
 options(repos = c(CRAN = "https://cran.rstudio.com"))
 
 # Specify required packages
-required_packages <- c("shiny", "shinydashboard", "data.table", "DT", "tidyverse", "arrow")
+required_packages <- c("shiny", "shinydashboard", "data.table", "DT", "tidyverse", "arrow", "httr")
 
 # Install missing packages
 missing_packages <- setdiff(required_packages, rownames(installed.packages()))
@@ -44,13 +44,37 @@ ui <- fluidPage(
 # Define server logic
 server <- function(input, output, session) {
   
-  # Load dataset (reactively loaded for real-time filtering)
+  # # Load dataset (reactively loaded for real-time filtering)
+  # dataset <- reactive({
+  #   #file <- "/Users/loren/OneDrive/TNC/Activity_8_survey_app/TNC_fellowship/data/derived_products/dt_long.feather" # for windows use
+  #   file <- "/Users/lsilva88/Library/CloudStorage/OneDrive-Personal/TNC/TNC_app/TNC_fellowship/data/derived_products/dt_long.feather" # for mac use
+  #   read_feather(file)  # Load dataset
+  # })
+
   dataset <- reactive({
-    #file <- "/Users/loren/OneDrive/TNC/Activity_8_survey_app/TNC_fellowship/data/derived_products/dt_long.feather" # for windows use
-    file <- "/Users/lsilva88/Library/CloudStorage/OneDrive-Personal/TNC/Activity_8_survey_app/TNC_fellowship/data/derived_products/dt_long.feather" # for mac use
-    read_feather(file)  # Load dataset
+    # URL of your Feather file hosted on GitHub
+    file_url <- "https://github.com/lobiouni/TNC_fellowship/raw/refs/heads/main/data/derived_products/dt_long.feather"
+    
+    # Define a temporary file to store the downloaded file
+    temp_file <- tempfile(fileext = ".feather")
+    
+    # Download the file using curl_download (reliable for binary files)
+    curl_download(file_url, temp_file)
+    
+    # Check if the file is downloaded correctly
+    if (file.exists(temp_file) && file.info(temp_file)$size > 0) {
+      message("File downloaded successfully.")
+      
+      # Read the Feather file from the temporary location
+      dataset <- read_feather(temp_file)
+      
+      return(dataset)
+    } else {
+      stop("File download failed or file is empty.")
+    }
   })
   
+
   # the state dropdown based on the dataset
   observe({
     req(dataset())  # Ensure the dataset is available
